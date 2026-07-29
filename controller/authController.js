@@ -3,12 +3,8 @@ const response = require("../helpers/responseHelper");
 
 class AuthController {
 
-    /**
-     * ============================================================
-     * LOGIN
-     * ============================================================
-     */
     async login(req, res) {
+        console.log("LOGIN BODY:", req.body);
 
         try {
 
@@ -89,11 +85,6 @@ class AuthController {
 
     }
 
-    /**
-     * ============================================================
-     * LOGOUT
-     * ============================================================
-     */
     async logout(req, res) {
 
         try {
@@ -163,38 +154,23 @@ class AuthController {
 
     }
 
-    /**
-     * ============================================================
-     * REFRESH TOKEN
-     * ============================================================
-     */
     async refreshToken(req, res) {
 
         try {
 
-            const refreshToken =
-                req.cookies?.refreshToken;
-
+            const refreshToken = req.cookies?.refreshToken;
             if (!refreshToken) {
-
                 return response.error(
-
                     res,
-
                     "Refresh token missing.",
-
                     401
-
                 );
 
             }
-
             const {
-
                 accessToken,
 
-                refreshToken:
-                    newRefreshToken,
+                refreshToken: newRefreshToken,
 
             } = await authService.refresh(
                 refreshToken
@@ -257,11 +233,6 @@ class AuthController {
 
     }
 
-    /**
-     * ============================================================
-     * CURRENT USER
-     * ============================================================
-     */
     async me(req, res) {
 
         try {

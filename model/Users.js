@@ -6,7 +6,9 @@ const UserSchema = new Schema(
     branchId: {
       type: Schema.Types.ObjectId,
       ref: "Branch",
-      required: true,
+      required: function () {
+        return this.role !== "admin";
+      },
     },
 
     email: {

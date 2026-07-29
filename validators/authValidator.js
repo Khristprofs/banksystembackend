@@ -18,11 +18,11 @@ exports.loginSchema = Joi.object({
         }),
 
     password: Joi.string()
-        .min(8)
+        .min(6)
         .max(100)
         .required()
         .messages({
-            "string.min": "Password must be at least 8 characters.",
+            "string.min": "Password must be at least 6 characters.",
             "any.required": "Password is required."
         })
 
@@ -40,10 +40,10 @@ exports.changePasswordSchema = Joi.object({
         .required(),
 
     newPassword: Joi.string()
-        .min(8)
+        .min(6)
         .max(100)
         .pattern(
-            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?#&])[A-Za-z\d@$!%*?#&]{8,}$/
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?#&])[A-Za-z\d@$!%*?#&]{6,}$/
         )
         .required()
         .messages({
@@ -91,10 +91,10 @@ exports.resetPasswordSchema = Joi.object({
         .required(),
 
     password: Joi.string()
-        .min(8)
+        .min(6)
         .max(100)
         .pattern(
-            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?#&])[A-Za-z\d@$!%*?#&]{8,}$/
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?#&])[A-Za-z\d@$!%*?#&]{6,}$/
         )
         .required(),
 

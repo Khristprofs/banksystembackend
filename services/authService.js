@@ -6,17 +6,13 @@ const generateToken = require("../helpers/generateToken");
 
 class AuthService {
 
-    /**
-     * ============================================================
-     * LOGIN
-     * ============================================================
-     */
     async login({
         email,
         password,
         ipAddress,
         userAgent
     }) {
+         console.log("SERVICE EMAIL:", email);
 
         // Find user
         const user =
@@ -53,9 +49,10 @@ class AuthService {
 
         // Generate Tokens
         const {
-            token,
+            accessToken,
             refreshToken
         } = generateToken(user);
+
 
         // Save refresh token
         await authRepository.addRefreshToken(
@@ -71,27 +68,17 @@ class AuthService {
             }
         );
 
-        // Update last login
-        await authRepository.updateLastLogin(
-            user._id,
-            ipAddress,
-            userAgent
-        );
 
         // Remove sensitive fields
         user.password = undefined;
         user.refreshTokens = undefined;
 
+
         return {
-
             user,
-
-            accessToken: token,
-
+            accessToken,
             refreshToken
-
         };
-
     }
 
     /**

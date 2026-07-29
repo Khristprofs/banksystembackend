@@ -3,21 +3,40 @@ const Branch = require("../model/Branch");
 const { hashPassword } = require("../utils/passwordUtils");
 
 exports.createUser = async (data) => {
-    const branch = await Branch.findById(data.branchId);
-    if (!branch) {
-        throw new Error("Branch does not exist");
-    }
-    const existingUser = await userRepository.findUserByEmailAndBank(
-        data.email,
-        branch.bankId
-    );
+    let branch = null;
 
-    if (existingUser) {
-        throw new Error(
-            "User already exists in another branch of this bank"
+    // Only validate branch for non-admin users
+    if (data.role !== "admin") {
+        branch = await Branch.findById(data.branchId);
+
+        if (!branch) {
+            throw new Error("Branch does not exist");
+        }
+
+        // Check if the email already exists within the same bank
+        const existingUser = await userRepository.findUserByEmailAndBank(
+            data.email,
+            branch.bankId
         );
+
+        if (existingUser) {
+            throw new Error(
+                "User already exists in another branch of this bank"
+            );
+        }
+    } else {
+        // Global admin email check
+        const existingAdmin = await userRepository.findUserByEmail(data.email);
+
+        if (existingAdmin) {
+            throw new Error("User already exists");
+        }
     }
+
+    // Hash password before saving
     data.password = await hashPassword(data.password);
+
+    // Create user
     return await userRepository.createUser(data);
 };
 
