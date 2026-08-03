@@ -35,9 +35,9 @@ exports.createBank = async (req, res) => {
         const bank = await Bank.create({
             name: name.trim(),
             logo,
-            description,
+            description: description.trim(),
             country: country.trim(),
-            address,
+            address: country.trim(),
 
         });
 
