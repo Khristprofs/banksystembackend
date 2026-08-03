@@ -21,7 +21,6 @@ exports.createBank = async (req, res) => {
         const existing = await Bank.findOne({
             $or: [
                 { name: name.trim() },
-                { country: country.trim() }
             ]
         });
 
