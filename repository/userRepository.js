@@ -11,10 +11,14 @@ exports.findUserByPhone = (phone) => {
 };
 
 exports.findUserById = (id) => {
-    return User.findById(id).populate(
-        "branchId",
-        "name code city bankId"
-    );
+    return User.findById(id).populate({
+        path: "branchId",
+        select: "name code city bankId",
+        populate: {
+            path: "bankId",
+            select: "name",
+        },
+    })
 };
 
 exports.findUserByEmailAndBank = async (email, bankId) => {
@@ -56,7 +60,14 @@ exports.findUsers = async (query = {}) => {
     }
 
     const users = await User.find(filter)
-        .populate("branchId", "name code city bankId")
+        .populate({
+            path: "branchId",
+            select: "name code city bankId",
+            populate: {
+                path: "bankId",
+                select: "name",
+            },
+        })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit);
@@ -78,7 +89,14 @@ exports.updateUser = (id, data) => {
     return User.findByIdAndUpdate(id, data, {
         new: true,
         runValidators: true,
-    }).populate("branchId", "name code city bankId");
+    }).populate({
+        path: "branchId",
+        select: "name code city bankId",
+        populate: {
+            path: "bankId",
+            select: "name",
+        },
+    });
 };
 
 exports.deleteUser = (id) => {
