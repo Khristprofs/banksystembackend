@@ -3,69 +3,55 @@ const Branch = require("../model/Branch");
 const { hashPassword } = require("../utils/passwordUtils");
 
 exports.createUser = async (data) => {
-    let branch = null;
-
-    // Only validate branch for non-admin users
-    if (data.role !== "admin") {
-        branch = await Branch.findById(data.branchId);
-
-        if (!branch) {
-            throw new Error("Branch does not exist");
-        }
-
-        // Check if the email already exists within the same bank
-        const existingUser = await userRepository.findUserByEmailAndBank(
-            data.email,
-            branch.bankId
-        );
-
-        if (existingUser) {
-            throw new Error(
-                "User already exists in another branch of this bank"
-            );
-        }
-    } else {
-        // Global admin email check
-        const existingAdmin = await userRepository.findUserByEmail(data.email);
-
-        if (existingAdmin) {
-            throw new Error("User already exists");
-        }
+  if (data.role !== "admin") {
+    if (!data.branchId) {
+      throw new Error("Branch is required");
     }
 
-    // Hash password before saving
-    data.password = await hashPassword(data.password);
+    const branch = await Branch.findById(data.branchId);
 
-    // Create user
-    return await userRepository.createUser(data);
+    if (!branch) {
+      throw new Error("Branch not found");
+    }
+  }
+
+  const existingUser = await userRepository.findUserByEmail(data.email);
+
+  if (existingUser) {
+    throw new Error("Email already exists");
+  }
+
+  data.password = await hashPassword(data.password);
+
+  return await userRepository.createUser(data);
 };
 
-
-exports.getUsers = async () => {
-    return await userRepository.findUsers();
+exports.getUsers = async (query) => {
+  return await userRepository.findUsers(query);
 };
-
 
 exports.getUserById = async (id) => {
-    return await userRepository.findUserById(id);
+  return await userRepository.findUserById(id);
 };
-
 
 exports.updateUser = async (id, data) => {
-    if (data.password) {
-        data.password = await hashPassword(data.password);
-    }
-    if (data.branchId) {
-        const branch = await Branch.findById(data.branchId);
-        if (!branch) {
-            throw new Error("Branch does not exist");
-        }
-    }
+  if (data.branchId) {
+    const branch = await Branch.findById(data.branchId);
 
-    return await userRepository.updateUser(id, data);
+    if (!branch) {
+      throw new Error("Branch not found");
+    }
+  }
+
+  if (data.password && data.password.trim() !== "") {
+    data.password = await hashPassword(data.password);
+  } else {
+    delete data.password;
+  }
+
+  return await userRepository.updateUser(id, data);
 };
 
-
 exports.deleteUser = async (id) => {
-    return await userRepository.deleteUser(id);
+  return await userRepository.deleteUser(id);
 };
