@@ -1,85 +1,139 @@
 const Bank = require("../model/Bank");
 
-exports.creatBank = async (req, res) => {
-    try{
-        const { name, address, description, logo, country} = req.body
+exports.createBank = async (req, res) => {
+    try {
 
-        if(!name || !address || !description || !logo || !country){
+        const {
+            name,
+            code,
+            supportEmail
+        } = req.body;
+
+        if (!name || !code) {
             return res.status(400).json({
                 success: false,
-                message: "All fields are required!"
-            })
+                message: "Bank name and code are required."
+            });
         }
-        const existingBank = await Bank.findOne({name: name.trim(), logo: logo});
-        if(existingBank){
+
+        const existing = await Bank.findOne({
+            $or: [
+                { name: name.trim() },
+                { code: code.trim().toUpperCase() }
+            ]
+        });
+
+        if (existing) {
             return res.status(409).json({
                 success: false,
-                message: "Bank already exist"
-            })
+                message: "Bank already exists."
+            });
         }
 
         const bank = await Bank.create({
             name: name.trim(),
-            address: address.trim(),
-            description,
-            logo,
-            country: country.trim(),
+            code: code.trim().toUpperCase(),
+            supportEmail
         });
 
         return res.status(201).json({
             success: true,
-            message: "Bank created successfully",
-            data: bank,
+            message: "Bank created successfully.",
+            data: bank
         });
-    }catch(error){
+
+    } catch (err) {
+
         return res.status(500).json({
             success: false,
-            message: "Error creating bank",
-            error: error.message
-        })
+            message: err.message
+        });
+
     }
-}
+};
 
 exports.getBanks = async (req, res) => {
+
     try {
-        const banks = await Bank.find().populate('name');
+
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+
+        const skip = (page - 1) * limit;
+
+        const [banks, total] = await Promise.all([
+
+            Bank.find()
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+
+            Bank.countDocuments()
+
+        ]);
+
         return res.status(200).json({
+
             success: true,
-            message: "Successfully fetched all banks",
-            count: banks.length,
-            data: banks
-        })
-    } catch (error) {
-        return res.status(404).json({
+
+            data: banks,
+
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
             success: false,
-            message: "Banks not found",
-            error: error.message
-        })
+            message: err.message
+        });
+
     }
-}
+
+};
 
 exports.getBankById = async (req, res) => {
+
     try {
-        const { id } = req.params;
-        const bank = await Bank.findById(id);
-        if (!bank){
+
+        const bank = await Bank.findById(req.params.id);
+
+        if (!bank) {
+
             return res.status(404).json({
                 success: false,
-                message: "Bank not found"
+                message: "Bank not found."
             });
+
         }
-        return res.status(200).json({
+
+        return res.json({
+
             success: true,
-            date: bank
+
+            data: bank
+
         });
-    } catch(error){
-        return res.status(404).json({
+
+    } catch (err) {
+
+        return res.status(500).json({
+
             success: false,
-            message: "Bank not found",
-            error: error.message
-        })
+
+            message: err.message
+
+        });
+
     }
-}
+
+};
 exports.getBankByName = async (req, res) => {
     try {
         const { name } = req.params;
@@ -110,55 +164,89 @@ exports.getBankByName = async (req, res) => {
 };
 
 exports.updateBank = async (req, res) => {
+
     try {
-        const { id } = req.params;
-        const updatedBank = await Bank.findByIdAndUpdate(
-            id,
-            req.body,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
-        if (!updatedBank) {
+
+        const bank = await Bank.findById(req.params.id);
+
+        if (!bank) {
+
             return res.status(404).json({
                 success: false,
-                message: "Bank not found",
+                message: "Bank not found."
             });
+
         }
-        return res.status(200).json({
+
+        bank.name = req.body.name ?? bank.name;
+        bank.code = req.body.code
+            ? req.body.code.toUpperCase()
+            : bank.code;
+
+        bank.supportEmail =
+            req.body.supportEmail ?? bank.supportEmail;
+
+        await bank.save();
+
+        return res.json({
+
             success: true,
-            message: "Bank updated successfully",
-            data: updatedBank,
+
+            message: "Bank updated successfully.",
+
+            data: bank
+
         });
-    } catch (error) {
+
+    } catch (err) {
+
         return res.status(500).json({
+
             success: false,
-            message: "Error updating bank",
-            error: error.message,
+
+            message: err.message
+
         });
+
     }
+
 };
 
 exports.deleteBank = async (req, res) => {
+
     try {
-        const { id } = req.params;
-        const bank = await Bank.findByIdAndDelete(id);
+
+        const bank = await Bank.findById(req.params.id);
+
         if (!bank) {
+
             return res.status(404).json({
                 success: false,
-                message: "Bank not found",
+                message: "Bank not found."
             });
+
         }
-        return res.status(200).json({
+
+        await bank.deleteOne();
+
+        return res.json({
+
             success: true,
-            message: "Bank deleted successfully",
+
+            message: "Bank deleted successfully."
+
         });
-    } catch (error) {
+
+    } catch (err) {
+
         return res.status(500).json({
+
             success: false,
-            message: "Error deleting bank",
-            error: error.message,
+
+            message: err.message
+
         });
+
     }
+
 };
