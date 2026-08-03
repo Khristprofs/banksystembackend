@@ -4,14 +4,6 @@ const router = express.Router();
 
 const dashboardController = require("../controller/dashboardController");
 
-const verifyJWT = require("../middlewares/authenticateToken");
-const verifyRoles = require("../helpers/verifyRole");
-
-// Only admins can access
-router.use(
-    verifyJWT,
-    verifyRoles("admin", "bank_admin")
-);
 
 router.get("/stats", dashboardController.getDashboardStats);
 
