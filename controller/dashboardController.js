@@ -5,7 +5,7 @@ const User = require("../model/Users");
 const Account = require("../model/Account");
 const Transaction = require("../model/Transaction");
 
-const asyncHandler = require("../middlewares/");
+const asyncHandler = require("../middlewares/asyncHandler");
 
 // =============================
 // Dashboard Statistics
