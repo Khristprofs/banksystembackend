@@ -1,202 +1,307 @@
+const mongoose = require("mongoose");
 const Branch = require("../model/Branch");
 const Bank = require("../model/Bank");
 const generateBranchCode = require("../services/branchService");
 
+// ======================================================
+// Create Branch
+// ======================================================
+
 exports.createBranch = async (req, res) => {
-    try {
-        const { bankId, name, phone, state, city } = req.body;
-        const bank = await Bank.findById(bankId);
+  try {
+    const { bankId, name, phone, state, city } = req.body;
 
-        if (!bank) {
-            return res.status(404).json({
-                success: false,
-                message: "Bank not found"
-            });
-        }
-        const code = generateBranchCode(bank.name, city);
-        const branch = await Branch.create({
-            bankId,
-            name,
-            phone,
-            state,
-            city,
-            code
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Branch created successfully",
-            data: branch
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!bankId || !name || !phone || !state || !city) {
+      return res.status(400).json({
+        success: false,
+        message: "Bank, branch name, phone, state and city are required.",
+      });
     }
+
+    if (!mongoose.Types.ObjectId.isValid(bankId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid bank.",
+      });
+    }
+
+    const bank = await Bank.findById(bankId);
+
+    if (!bank) {
+      return res.status(404).json({
+        success: false,
+        message: "Bank not found.",
+      });
+    }
+
+    const existingBranch = await Branch.findOne({
+      bankId,
+      name: { $regex: `^${name.trim()}$`, $options: "i" },
+    });
+
+    if (existingBranch) {
+      return res.status(409).json({
+        success: false,
+        message: "Branch already exists for this bank.",
+      });
+    }
+
+    const code = generateBranchCode(bank.name, city);
+
+    const branch = await Branch.create({
+      bankId,
+      name: name.trim(),
+      phone: phone.trim(),
+      state: state.trim(),
+      city: city.trim(),
+      code,
+    });
+
+    const populatedBranch = await Branch.findById(branch._id).populate(
+      "bankId",
+      "name"
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Branch created successfully.",
+      data: populatedBranch,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error creating branch.",
+      error: error.message,
+    });
+  }
 };
 
+// ======================================================
+// Get All Branches (Pagination)
+// ======================================================
 
 exports.getBranches = async (req, res) => {
-    try {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
 
-        const branches = await Branch.find()
-            .populate("bankId", "name");
+    const skip = (page - 1) * limit;
 
-        res.status(200).json({
-            success: true,
-            count: branches.length,
-            data: branches
-        });
+    const [branches, total] = await Promise.all([
+      Branch.find()
+        .populate("bankId", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+      Branch.countDocuments(),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: branches,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching branches.",
+      error: error.message,
+    });
+  }
 };
 
+// ======================================================
+// Get Branch By Id
+// ======================================================
 
 exports.getBranchById = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
 
-        const branch = await Branch.findById(req.params.id)
-            .populate("bankId", "name");
-
-        if (!branch) {
-            return res.status(404).json({
-                success: false,
-                message: "Branch not found"
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: branch
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid branch id.",
+      });
     }
+
+    const branch = await Branch.findById(id).populate("bankId", "name");
+
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: branch,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching branch.",
+      error: error.message,
+    });
+  }
 };
 
+// ======================================================
+// Get Branches By Bank
+// ======================================================
 
 exports.getBranchesByBank = async (req, res) => {
-    try {
-        const branches = await Branch.find({
-            bankId: req.params.bankId
-        });
+  try {
+    const { bankId } = req.params;
 
-        res.status(200).json({
-            success: true,
-            count: branches.length,
-            data: branches
-        });
+    const branches = await Branch.find({ bankId })
+      .populate("bankId", "name")
+      .sort({ name: 1 });
 
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      count: branches.length,
+      data: branches,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching branches.",
+      error: error.message,
+    });
+  }
 };
+
+// ======================================================
+// Search Branch
+// ======================================================
 
 exports.getBranchByName = async (req, res) => {
-    try {
+  try {
+    const { name } = req.params;
 
-        const branches = await Branch.find({
-            name: { $regex: req.params.name, $options: "i" }
-        });
+    const branches = await Branch.find({
+      name: {
+        $regex: name,
+        $options: "i",
+      },
+    }).populate("bankId", "name");
 
-        res.status(200).json({
-            success: true,
-            count: branches.length,
-            data: branches
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      count: branches.length,
+      data: branches,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error searching branch.",
+      error: error.message,
+    });
+  }
 };
+
+// ======================================================
+// Update Branch
+// ======================================================
 
 exports.updateBranch = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
+    const { bankId, city } = req.body;
 
-        const { bankId, city } = req.body;
-
-        if (bankId) {
-
-            const bank = await Bank.findById(bankId);
-
-            if (!bank) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Bank not found"
-                });
-            }
-
-            if (city) {
-                req.body.code = generateBranchCode(bank.name, city);
-            }
-        }
-
-        const branch = await Branch.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true }
-        );
-
-        if (!branch) {
-            return res.status(404).json({
-                success: false,
-                message: "Branch not found"
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Branch updated successfully",
-            data: branch
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid branch id.",
+      });
     }
+
+    if (bankId) {
+      const bank = await Bank.findById(bankId);
+
+      if (!bank) {
+        return res.status(404).json({
+          success: false,
+          message: "Bank not found.",
+        });
+      }
+
+      if (city) {
+        req.body.code = generateBranchCode(bank.name, city);
+      }
+    }
+
+    const updatedBranch = await Branch.findByIdAndUpdate(
+      id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate("bankId", "name");
+
+    if (!updatedBranch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Branch updated successfully.",
+      data: updatedBranch,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error updating branch.",
+      error: error.message,
+    });
+  }
 };
 
+// ======================================================
+// Delete Branch
+// ======================================================
 
 exports.deleteBranch = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
 
-        const branch = await Branch.findByIdAndDelete(req.params.id);
-
-        if (!branch) {
-            return res.status(404).json({
-                success: false,
-                message: "Branch not found"
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Branch deleted successfully"
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid branch id.",
+      });
     }
+
+    const branch = await Branch.findByIdAndDelete(id);
+
+    if (!branch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Branch deleted successfully.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting branch.",
+      error: error.message,
+    });
+  }
 };
