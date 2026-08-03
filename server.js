@@ -15,6 +15,7 @@ const transactionRoute = require('./routes/transactionRoute')
 const notificationRoute = require('./routes/notificationRoute')
 const refreshTokenRoute = require('./routes/refreshTokenRoute')
 const authRoute = require("./routes/authRoute");
+const dashboardRoute = require("./routes/dashboardRoute");
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use("/api/v1/transactions", transactionRoute);
 app.use("/api/v1/notifications", notificationRoute);
 app.use("/api/v1/refreshtoken", refreshTokenRoute);
 app.use("/api/v1/auth", authRoute);
+app.use("/api/v1/dashboard", dashboardRoute);
 
 app.get("/", (req, res) => {
     res.send("Server running")

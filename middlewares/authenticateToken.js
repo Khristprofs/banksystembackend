@@ -1,27 +1,35 @@
-require('dotenv').config(); // Must be at the very top
-const jwt = require('jsonwebtoken');
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
-module.exports = (req, res, next) => {
+const verifyJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader?.startsWith('Bearer ')) {
-        return res.sendStatus(401);
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            success: false,
+            message: "Access token missing.",
+        });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
 
-    jwt.verify(
-        token,
-        process.env.JWT_SECRET, // Changed to match your .env
-        (err, decoded) => {
-            if (err) {
-                console.error('JWT Error:', err.message);
-                return res.sendStatus(403);
-            }
-
-            req.user = decoded;
-            req.roles = decoded.roles || [];
-            next();
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({
+                success: false,
+                message: "Invalid or expired token.",
+            });
         }
-    );
+
+        req.user = {
+            id: decoded.sub,
+            role: decoded.role,
+            branchId: decoded.branchId,
+            email: decoded.email,
+        };
+
+        next();
+    });
 };
+
+module.exports = verifyJWT;
