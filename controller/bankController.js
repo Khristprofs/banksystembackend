@@ -5,21 +5,23 @@ exports.createBank = async (req, res) => {
 
         const {
             name,
-            code,
-            supportEmail
+            country,
+            address,
+            description,
+            logo,
         } = req.body;
 
-        if (!name || !code) {
+        if (!name || !country || !address || !description) {
             return res.status(400).json({
                 success: false,
-                message: "Bank name and code are required."
+                message: "Name, country, address and description are required."
             });
         }
 
         const existing = await Bank.findOne({
             $or: [
                 { name: name.trim() },
-                { code: code.trim().toUpperCase() }
+                { country: country.trim() }
             ]
         });
 
@@ -32,8 +34,11 @@ exports.createBank = async (req, res) => {
 
         const bank = await Bank.create({
             name: name.trim(),
-            code: code.trim().toUpperCase(),
-            supportEmail
+            logo,
+            description,
+            country: country.trim(),
+            address,
+
         });
 
         return res.status(201).json({
@@ -179,12 +184,9 @@ exports.updateBank = async (req, res) => {
         }
 
         bank.name = req.body.name ?? bank.name;
-        bank.code = req.body.code
-            ? req.body.code.toUpperCase()
-            : bank.code;
-
-        bank.supportEmail =
-            req.body.supportEmail ?? bank.supportEmail;
+        bank.country = req.body.country ?? bank.country;
+        bank.address = req.body.address ?? bank.address;
+        bank.description = req.body.description ?? bank.description;
 
         await bank.save();
 
