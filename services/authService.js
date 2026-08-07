@@ -12,58 +12,91 @@ class AuthService {
         ipAddress,
         userAgent
     }) {
-        console.log(
-            "DATABASE:",
-            mongoose.connection.name
-        );
+        console.log("========== LOGIN DEBUG ==========");
+        console.log("LOGIN EMAIL:", email);
 
-        console.log(
-            "DATABASE HOST:",
-            mongoose.connection.host
-        );
-        console.log("SERVICE EMAIL:", email);
-
-        // Find user
         const user =
             await authRepository.findByEmail(email);
 
-        if (!user) {
-            throw new Error("Invalid email or password.");
+        console.log("USER FOUND:", !!user);
+
+        if (user) {
+            console.log(
+                "USER ID:",
+                user._id.toString()
+            );
+
+            console.log(
+                "USER EMAIL:",
+                user.email
+            );
+
+            console.log(
+                "USER ROLE:",
+                user.role
+            );
+
+            console.log(
+                "USER STATUS:",
+                user.status
+            );
+
+            console.log(
+                "EMAIL VERIFIED:",
+                user.isEmailVerified
+            );
+
+            console.log(
+                "PASSWORD EXISTS:",
+                !!user.password
+            );
+
+            console.log(
+                "PASSWORD LENGTH:",
+                user.password?.length
+            );
         }
 
-        // Verify password
+        if (!user) {
+            throw new Error(
+                "Invalid email or password."
+            );
+        }
+
         const isMatch =
             await bcrypt.compare(
                 password,
                 user.password
             );
 
+        console.log(
+            "PASSWORD MATCH:",
+            isMatch
+        );
+
         if (!isMatch) {
-            throw new Error("Invalid email or password.");
+            throw new Error(
+                "Invalid email or password."
+            );
         }
 
-        // Verify account status
         if (user.status !== "active") {
             throw new Error(
                 `Account is ${user.status}.`
             );
         }
 
-        // Verify email
         if (!user.isEmailVerified) {
             throw new Error(
                 "Please verify your email first."
             );
         }
 
-        // Generate Tokens
         const {
             accessToken,
             refreshToken
         } = generateToken(user);
 
-
-        // Save refresh token
         await authRepository.addRefreshToken(
             user._id,
             {
@@ -72,16 +105,14 @@ class AuthService {
                 userAgent,
                 device: userAgent,
                 expiresAt: new Date(
-                    Date.now() + 7 * 24 * 60 * 60 * 1000
+                    Date.now() +
+                    7 * 24 * 60 * 60 * 1000
                 )
             }
         );
 
-
-        // Remove sensitive fields
         user.password = undefined;
         user.refreshTokens = undefined;
-
 
         return {
             user,
