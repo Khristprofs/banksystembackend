@@ -1,12 +1,6 @@
 const User = require("../model/Users");
 
 class AuthRepository {
-
-    /**
-     * ============================================================
-     * Find user by email
-     * ============================================================
-     */
     async findByEmail(email) {
 
         return User.findOne({

@@ -12,7 +12,16 @@ class AuthService {
         ipAddress,
         userAgent
     }) {
-         console.log("SERVICE EMAIL:", email);
+        console.log(
+            "DATABASE:",
+            mongoose.connection.name
+        );
+
+        console.log(
+            "DATABASE HOST:",
+            mongoose.connection.host
+        );
+        console.log("SERVICE EMAIL:", email);
 
         // Find user
         const user =
