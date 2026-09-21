@@ -1,5 +1,6 @@
 const accountService = require("../services/accountService");
 const response = require("../helpers/responseHelper");
+const Account = require("../model/Account")
 
 exports.createAccount = async (req, res) => {
     try {
@@ -18,6 +19,30 @@ exports.getAccounts = async (req, res) => {
     } catch (err) {
         response.error(res, err.message);
     }
+};
+
+exports.getMyAccounts = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const accounts = await Account.find({
+      userId: userId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Accounts retrieved successfully",
+      data: accounts,
+    });
+  } catch (error) {
+    console.error("Get my accounts error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load your accounts",
+      error: error.message,
+    });
+  }
 };
 
 exports.getAccountByNumber = async (req, res) => {
