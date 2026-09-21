@@ -70,3 +70,7 @@ exports.updateAccount = (id, data) =>
 
 exports.deleteAccount = (id) =>
     Account.findByIdAndDelete(id);
+exports.getBalance = (accountId) =>
+    Account.findById(accountId).select(
+        "accountNumber accountType currency balance availableBalance ledgerBalance status"
+    );

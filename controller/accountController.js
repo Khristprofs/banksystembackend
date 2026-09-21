@@ -91,3 +91,27 @@ exports.deleteAccount = async (req, res) => {
         response.error(res, err.message);
     }
 };
+exports.getBalance = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+
+        const balance =
+            await accountService.getBalance(id);
+
+        res.status(200).json({
+            success: true,
+            message: "Balance retrieved successfully",
+            data: balance,
+        });
+
+    } catch (error) {
+
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+};

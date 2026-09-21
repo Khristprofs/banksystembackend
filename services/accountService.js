@@ -126,3 +126,27 @@ exports.updateAccount = async (id, data) => {
 
 exports.deleteAccount = async (id) =>
     await accountRepo.deleteAccount(id);
+exports.getBalance = async (accountId) => {
+
+    const account =
+        await accountRepo.getBalance(accountId);
+
+    if (!account) {
+        throw new Error("Account not found");
+    }
+
+    if (account.status !== "active") {
+        throw new Error(
+            `Account is ${account.status}`
+        );
+    }
+
+    return {
+        accountNumber: account.accountNumber,
+        accountType: account.accountType,
+        currency: account.currency,
+        balance: account.balance,
+        availableBalance: account.availableBalance,
+        ledgerBalance: account.ledgerBalance,
+    };
+};

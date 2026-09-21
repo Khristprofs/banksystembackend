@@ -28,5 +28,9 @@ router.put(
 );
 
 router.delete("/delete/:id", accountController.deleteAccount);
+router.get(
+    "/:id/balance",
+    accountController.getBalance
+);
 
 module.exports = router;
